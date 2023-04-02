@@ -156,14 +156,14 @@ def quantize_factor(factor_data,
                 return pd.concat([pos_bins, neg_bins]).sort_index()
         except Exception as e:
             if _no_raise:
-                return pd.Series(index=x.index)
+                return pd.Series(index=x.index, dtype=float)
             raise e
 
     grouper = [factor_data.index.get_level_values('date')]
     if by_group:
         grouper.append('group')
 
-    factor_quantile = factor_data.groupby(grouper)['factor'] \
+    factor_quantile = factor_data.groupby(grouper, group_keys=False)['factor'] \
         .apply(quantile_calc, quantiles, bins, zero_aware, no_raise)
     factor_quantile.name = 'factor_quantile'
 
@@ -648,17 +648,10 @@ def get_clean_factor(factor,
     fwdret_loss = (initial_amount - fwdret_amount) / initial_amount
     bin_loss = tot_loss - fwdret_loss
 
-    print("Dropped %.1f%% entries from factor data: %.1f%% in forward "
-          "returns computation and %.1f%% in binning phase "
-          "(set max_loss=0 to see potentially suppressed Exceptions)." %
-          (tot_loss * 100, fwdret_loss * 100, bin_loss * 100))
-
     if tot_loss > max_loss:
         message = ("max_loss (%.1f%%) exceeded %.1f%%, consider increasing it."
                    % (max_loss * 100, tot_loss * 100))
         raise MaxLossExceededError(message)
-    else:
-        print("max_loss is %.1f%%, not exceeded: OK!" % (max_loss * 100))
 
     return merged_data
 
